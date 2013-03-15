@@ -9,10 +9,9 @@
 
 var config = '';
 var trakt = '';
-var allreadyseen = false;
 pMode = 0;
 pIMDB=0;pHULU=1;pSOUTHPARK=2;pKINOXTO=3;
-
+var bInWatchlist = false;
 
 function getPage() {
 	if(window.location.toString().search("kinox")!=-1) {
@@ -44,19 +43,25 @@ function loadUser() {
 
 function main() {
 	$(document).ready(function() {
-		var datashows; // JSON Object
-		var datamovies;
+		var datashowsseen; // JSON Object
+		var datamoviesseen;
+		var datashowswatchlist;
+		var datamovieswatchlist;
 
 		// Check if the JSON Object is stored in the local storage
 		var ts = Math.round((new Date()).getTime() / 1000);
 		var lastupdate = ts-$.Storage.get("seen-shows-date");
 		if( $.Storage.get("seen-shows-date") != null && lastupdate<300 ) {
-			console.log("loading seen-shows json object from local storage - last update :"+(lastupdate));
-			datashows = JSON.parse($.Storage.get("seen-shows")); // Load
-			datamovies = JSON.parse($.Storage.get("seen-movies")); // Load
+			console.log("loading users seen and watchlist json object from local storage - last update :"+(lastupdate));
+			datashowsseen = JSON.parse($.Storage.get("seen-shows")); // Load
+			datamoviesseen = JSON.parse($.Storage.get("seen-movies")); // Load
+			datashowswatchlist = JSON.parse($.Storage.get("watchlist-shows")); // Load
+			datamovieswatchlist = JSON.parse($.Storage.get("watchlist-movies")); // Load
 
-			//console.log('datashows',datashows);
-			//console.log('datamovies',datamovies);
+			//console.log('datashowsseen',datashowsseen);
+			//console.log('datamoviesseen',datamoviesseen);
+			console.log('datashows-watchlist',datashowswatchlist);
+			console.log('datamovies-watchlist',datamovieswatchlist);
 
 			if(pMode == pKINOXTO)
 				loadSeenKinox();
@@ -65,27 +70,44 @@ function main() {
 			if(pMode == pSOUTHPARK)
 				initSouthpark();
 		} else {
-			console.log("save and load seen-shows and movies json object to local storage"); 
+			console.log("save and load seen and watchlist json object to local storage"); 
 
 			trakt.request('user', 'library/shows/watched', {username: config.user, extended: false}, function(err, res) {
 				if(!err) {
-					datashows = res;
+					datashowsseen = res;
 					$.Storage.set("seen-shows-date", ts.toString());
 					$.Storage.set("seen-shows", JSON.stringify(res));	//save
 					trakt.request('user', 'library/movies/watched', {username: config.user, extended: false}, function(err2, res2) {
 						if(!err2) {
-							datamovies = res2;
+							datamoviesseen = res2;
 							$.Storage.set("seen-movies", JSON.stringify(res2));
-			
-							if(pMode == pKINOXTO)
-								loadSeenKinox();
-							if(pMode == pIMDB)
-								loadSeenImdb();
-							if(pMode == pSOUTHPARK)
-								initSouthpark();
-						}
+							trakt.request('user', 'watchlist/movies', {username: config.user, extended: false}, function(err3, res3) {
+								if(!err3) {
+									datamovieswatchlist = res3;
+									$.Storage.set("watchlist-movies", JSON.stringify(res3));
+									trakt.request('user', 'watchlist/shows', {username: config.user, extended: false}, function(err4, res4) {
+										if(!err4) {
+											datashowswatchlist = res4;
+											$.Storage.set("watchlist-shows", JSON.stringify(res4));
+											
+											//console.log('datashowsseen',datashowsseen);
+											//console.log('datamoviesseen',datamoviesseen);
+											console.log('datashows-watchlist',datashowswatchlist);
+											console.log('datamovies-watchlist',datamovieswatchlist);
+											
+											if(pMode == pKINOXTO)
+												loadSeenKinox();
+											if(pMode == pIMDB)
+												loadSeenImdb();
+											if(pMode == pSOUTHPARK)
+												initSouthpark();
+										} else console.log(err4);
+									});									
+								} else console.log(err3);
+							});
+						} else console.log(err2);
 					});
-				}
+				} else console.log(err);
 			});
 		}
 
@@ -133,7 +155,7 @@ function main() {
 				season = ids.SEASON;
 				episode = ids.EPISODE;
 
-				$.each(datashows, function(key, show) {
+				$.each(datashowsseen, function(key, show) {
 					if(show.imdb_id == "tt0121955") {				
 						for(var i=0;i<show.seasons.length;i++) {
 							if(show.seasons[i].season.toString()==season) {
@@ -210,6 +232,7 @@ function main() {
 							console.log(err);
 						}
 					});
+					
 				}
 			}
 
@@ -227,7 +250,7 @@ function main() {
 							if(tmphref[p]=="title")
 								imgimdb = tmphref[p+1];
 						}
-						$.each(datamovies, function(key, show) {						
+						$.each(datamoviesseen, function(key, show) {						
 							if(show.imdb_id == imgimdb) {
 							that.css("background-color","black");
 							that.find("td").css("color","white");
@@ -249,11 +272,19 @@ function main() {
 							imgimdb = tmphref[p+1];
 					}
 
-					$.each(datamovies, function(key, show) {
-						if(show.imdb_id == imgimdb) {
+					$.each(datamoviesseen, function(key, movie) {
+						if(movie.imdb_id == imgimdb) {
 							$('#img_primary').find("a").prepend("<div class='overlay-watched-big' style='left:"+cssleft+"px;bottom: 10px;'></div>");
 						}
 					});
+					
+					//check for watched movies
+					$.each(datamovieswatchlist, function(key, movie) {
+						if(movie.imdb_id == imgimdb) {
+							bInWatchlist = true;
+						}
+					});
+			
 				}
 
 				$('a[href*="/title/"]').each(function() {
@@ -273,13 +304,13 @@ function main() {
 
 						var cssleft = (orgimgwidth - 55);
 
-						$.each(datamovies, function(key, show) {
+						$.each(datamoviesseen, function(key, show) {
 							if(show.imdb_id == imgimdb) {
 								that.has("img").prepend("<div class='overlay-watched' style='left:"+cssleft+"px'></div>");
 							}
 						});
 						
-						$.each(datashows, function(key, show) {
+						$.each(datashowsseen, function(key, show) {
 							if(show.imdb_id == imgimdb) {
 								that.has("img").prepend("<div class='overlay-watched' style='left:"+cssleft+"px'></div>");
 							}
@@ -287,15 +318,15 @@ function main() {
 					}
 				});
 			}
-			if(!allreadyseen)
-				addSeenButton();
+			
+			addSeenButton();
 		}
 
 
 		function loadSeenKinox() {
 			var vimdb = $(".IMDBRatingLinks").children("a").attr("href").replace('/', '');
 
-			$.each(datashows, function(key, show) {		
+			$.each(datashowsseen, function(key, show) {		
 				if(show.imdb_id == vimdb) {
 					var selectedSeason = $("#SeasonSelection option:selected").attr("value");
 
@@ -339,7 +370,7 @@ function main() {
 
 		function addSeenButton() {
 			function appendButtons() {
-				$('<div class="trakt-button button-success" id="trakt-success">Success</div>').insertAfter(".trakt-button.button-watched");	
+				$('<div class="trakt-button button-success" id="trakt-success">Success</div>').insertAfter(".trakt-button.button-watchlist-no");	
 				$('<div class="trakt-button button-failure" id="trakt-failure">Failure</div>').insertAfter("#trakt-success");
 				$('<div class="trakt-button button-exist" id="trakt-exist">Already Seen</div>').insertAfter("#trakt-failure");
 				$('<img id="trakt-loading" src="'+chrome.extension.getURL("images/load.gif")+'">').insertAfter("#trakt-exist");
@@ -375,20 +406,27 @@ function main() {
 					var sButtons = '<div id="traktv">';
 					sButtons += '<a class="trakt-button button-seen" id="add-seen-show-episode-imdb">Seen</a>'; //Seen
 					if(config.checkin == 'true') sButtons += '<a class="trakt-button button-checkin" id="add-checkin-show-episode-imdb">Check In</a>';  //Checkin
-					sButtons += '<a class="trakt-button button-watched" id="add-watchlist-show-episode-imdb">Watchlist</a>'; //Watchlist
+					sButtons += ' <a class="trakt-button ';
+					if(bInWatchlist) sButtons += 'button-watchlist-yes'; else sButtons += 'button-watchlist-no';
+					sButtons += '" id="add-watchlist-show-imdb">Watchlist</a>'; //Watchlist
+					sButtons += '<div id="trakt-show-progress"></div>'; //TV Show Progress
 					sButtons += '</div><br><br>';
 					$(sButtons).prependTo($('#overview-bottom'));
 				} else if($('meta[property="og:type"]').attr("content") == 'video.tv_show') {
 					var sButtons = '<div id="traktv">';
 					sButtons += '<a class="trakt-button button-seen" id="add-seen-show-imdb">Seen</a>'; //Seen
-					sButtons += ' <a class="trakt-button button-watched" id="add-watchlist-show-imdb">Watchlist</a><div id="trakt-show-progress"></div>'; //Watchlist
+					sButtons += ' <a class="trakt-button ';
+					if(bInWatchlist) sButtons += 'button-watchlist-yes'; else sButtons += 'button-watchlist-no';
+					sButtons += '" id="add-watchlist-show-imdb">Watchlist</a><div id="trakt-show-progress"></div>'; //Watchlist
 					sButtons += '</div><br><br>';
 					$(sButtons).prependTo($('#overview-bottom'));
 				} else {
 					var sButtons = '<div id="traktv">';
 					sButtons += '<a class="trakt-button button-seen" id="add-seen-movie-imdb">Seen</a>'; //Seen
 					if(config.checkin == 'true') sButtons += ' <a class="trakt-button button-checkin" id="add-checkin-movie-imdb">Check In</a>'; //Checkin
-					sButtons += ' <a class="trakt-button button-watched" id="add-watchlist-movie-imdb">Watchlist</a>'; //Watchlist
+					sButtons += ' <a class="trakt-button ';
+					if(bInWatchlist) sButtons += 'button-watchlist-yes'; else sButtons += 'button-watchlist-no';
+					sButtons += '" id="add-watchlist-movie-imdb">Watchlist</a>'; //Watchlist
 					sButtons += '</div><br><br>';
 					$(sButtons).prependTo($('#overview-bottom'));
 				}
@@ -446,15 +484,20 @@ function main() {
 					$("#trakt-loading").css("display","none");
 					if(!err) {
 						console.log(res);
-						if(res.message == "0 episodes marked as seen")
+						if(res.message == "0 episodes marked as seen") {
 							animate_button_exist("Already Seen");
-						else if(res.message.indexOf("episodes marked as seen") != -1)
+							return false;
+						} else if(res.message.indexOf("episodes marked as seen") != -1) {
 							animate_button_success();
-						else
+							return true;
+						} else {
 							animate_button_failure();
+							return false;
+						}
 					} else {
 						animate_button_failure();
 						console.log(err);
+						return false;
 					}
 				});
 			}
@@ -474,15 +517,20 @@ function main() {
 					$("#trakt-loading").css("display","none");
 					if(!err) {
 						console.log(res);
-						if(res.message == "1 episodes marked as seen")
+						if(res.message == "1 episodes marked as seen") {
 							animate_button_success();
-						else if(res.message == "0 episodes marked as seen")
+							return true;
+						} else if(res.message == "0 episodes marked as seen") {
 							animate_button_exist("Already Seen");
-						else
+							return false;
+						} else {
 							animate_button_failure();
+							return false;
+						}
 					} else {
 						animate_button_failure();
 						console.log(err);
+						return false;
 					}
 				});
 			}
@@ -543,15 +591,20 @@ function main() {
 					$("#trakt-loading").css("display","none");
 					if(!err) {
 						console.log(res);
-						if(res.inserted>0)
+						if(res.inserted>0) {
 							animate_button_success();
-						else if(res.already_exist>0)
+							return true;
+						} else if(res.already_exist>0) {
 							animate_button_exist("Already in Watchlist");
-						else
+							return false;
+						} else {
 							animate_button_failure();
+							return false;
+						}
 					} else {
 						animate_button_failure();
 						console.log(err);
+						return false;
 					}
 				});
 			}
@@ -571,15 +624,20 @@ function main() {
 					$("#trakt-loading").css("display","none");
 					if(!err) {
 						console.log(res);
-						if(res.message == "1 episodes added to your watchlist")
+						if(res.message == "1 episodes added to your watchlist") {
 							animate_button_success();
-						else if(res.message == "0 episodes added to your watchlist")
+							return true;
+						} else if(res.message == "0 episodes added to your watchlist") {
 							animate_button_exist("Already in Watchlist");
-						else
+							return false;
+						} else {
 							animate_button_failure();
+							return false;
+							}
 					} else {
 						animate_button_failure();
 						console.log(err);
+						return false;
 					}
 				});
 			}
@@ -598,15 +656,20 @@ function main() {
 					$("#trakt-loading").css("display","none");
 					if(!err) {
 						console.log(res);
-						if(res.inserted>0)
+						if(res.inserted>0) {
 							animate_button_success();
-						else if(res.already_exist>0)
+							return true;
+						} else if(res.already_exist>0) {
 							animate_button_exist("Already Seen");
-						else
+							return false;
+						} else {
 							animate_button_failure();
+							return false;
+						}
 					} else {
 						animate_button_failure();
 						console.log(err);
+						return false;
 					}
 				});
 			}
@@ -635,12 +698,16 @@ function main() {
 					success: function(data5,data2,data3) {
 						console.log(data5);
 						$("#trakt-loading").css("display","none");
-						if(data5.status=="success")
+						if(data5.status=="success") {
 							animate_button_success();
-						else if(data5.error.toString().search("in progress") !=-1)
+							return true;
+						} else if(data5.error.toString().search("in progress") !=-1) {
 							animate_button_exist("Already Check In in progress");
-						else
+							return false;
+						} else {
 							animate_button_failure();
+							return false;
+						}
 						},
 					error: function (xhr, ajaxOptions, thrownError) {
 						$("#trakt-loading").css("display","none");
@@ -655,6 +722,35 @@ function main() {
 			function add_watchlist_movie(vimdb,vtitle,vyear) {
 				{$("#trakt-loading").css("display","block");}
 				trakt.request('movie', 'watchlist', {movies: [{
+						imdb_id: vimdb,
+						title: vtitle,
+						year: vyear
+					}]
+					}, function(err, res) {
+					$("#trakt-loading").css("display","none");
+					if(!err) {
+						console.log(res);
+						if(res.inserted>0) {
+							animate_button_success();
+							return true;
+						} else if(res.already_exist>0) {
+							animate_button_exist("Already in Watchlist");
+							return false;
+						} else {
+							animate_button_failure();
+							return false;
+						}
+					} else {
+						animate_button_failure();
+						console.log(err);
+						return false;
+					}
+				});
+			}
+
+			function remove_watchlist_movie(vimdb,vtitle,vyear) {
+				{$("#trakt-loading").css("display","block");}
+				trakt.request('movie', 'unwatchlist', {movies: [{
 						imdb_id: vimdb,
 						title: vtitle,
 						year: vyear
@@ -714,10 +810,16 @@ function main() {
 				return rdata;
 			}  
 
-			$("#add-watchlist-movie-imdb").click(function(event){
+			$("a.trakt-button.button-watchlist-no").click(function(event){
 			var data = getMovieDataImdb();
 			add_watchlist_movie(data.imdb,data.title,data.year);
 			console.log('add_watchlist_movie');
+			});
+
+			$("a.trakt-button.button-watchlist-yes").click(function(event){
+			var data = getMovieDataImdb();
+			remove_watchlist_movie(data.imdb,data.title,data.year);
+			console.log('remove_watchlist_movie');
 			});
 
 			$("#add-seen-movie-imdb").click(function(event){

@@ -13,52 +13,87 @@
 	-webkit-border-radius:6px;	
 	text-shadow:none;	
 	outline:0;	
-	font-family:'DroidSans',Arial,serif;}
+	font-family:'DroidSans',Arial,serif;
+	}
 
 .trakt-button:hover{
 	background:#D1E751;	
-	color:#000;	
-}	
+	color:#000;
+	}	
 
 .button-success{
 	background-color:green;	
 	opacity: 0;
-	display: none;}
+	display: none;
+	}
 
 .button-failure{
 	background-color:red;	
 	opacity: 0;
-	display: none;}
+	display: none;
+	}
 
 .button-exist{
 	background-color:#4FBFD5;	
 	opacity: 0;
-	display: none;}
+	display: none;
+	}
 
 .trakt-button:active{
-	color:#000;}
+	color:#000;
+	}
 	
 .button-seen{
 	padding-left:20px!important;
 	background-image:url('chrome-extension://__MSG_@@extension_id__/images/icon-plus-only.png'); 
 	background-repeat:no-repeat;	
-	background-position:6px 50%;}
+	background-position:6px 50%;
+	}
 	
 .button-seen:hover{
 	background-image:url('chrome-extension://__MSG_@@extension_id__/images/icon-plus-only-hover.png'); 
 	background-repeat:no-repeat;	
-	background-position:6px 50%;}
+	background-position:6px 50%;
+	}
+
+.button-watchlist-no{
+	padding-left:20px!important;
+	background-image:url('chrome-extension://__MSG_@@extension_id__/images/icon-plus-only.png'); 
+	background-repeat:no-repeat;	
+	background-position:6px 50%;
+	}
+	
+.button-watchlist-no:hover{
+	background-image:url('chrome-extension://__MSG_@@extension_id__/images/icon-plus-only-hover.png'); 
+	background-repeat:no-repeat;	
+	background-position:6px 50%;
+	}
+
+.button-watchlist-yes{
+	padding-left:20px!important;
+	background-image:url('chrome-extension://__MSG_@@extension_id__/images/icon-cross-only.png'); 
+	background-repeat:no-repeat;	
+	background-position:6px 50%;
+	}
+	
+.button-watchlist-yes:hover{
+	background-image:url('chrome-extension://__MSG_@@extension_id__/images/icon-cross-only-hover.png'); 
+	background-repeat:no-repeat;	
+	background-position:6px 50%;
+	}
 	
 .button-checkin{
 	padding-left: 28px!important;
 	background-image:url('chrome-extension://__MSG_@@extension_id__/images/icon-check-in-hover.png'); 
 	background-repeat:no-repeat;	
-	background-position:6px 45%;}
+	background-position:6px 45%;
+	}
 	
 .button-checkin:hover{
 	background-image:url('chrome-extension://__MSG_@@extension_id__/images/icon-check-in.png'); 
 	background-repeat:no-repeat;	
-	background-position:6px 45%;}
+	background-position:6px 45%;
+	}
 	
 .overlay-watched{
 	width: 55px !important;
@@ -69,7 +104,8 @@
 	background-image: url('chrome-extension://__MSG_@@extension_id__/images/episode-seen.png');
 	background-repeat: no-repeat !important;
 	background-color: transparent !important;
-	background-size: 100% auto; !important}
+	background-size: 100% auto; !important
+	}
 
 .overlay-watched-big{
 	width: 75px;
@@ -78,7 +114,8 @@
 	margin-bottom: -75px;
 	background-image: url('chrome-extension://__MSG_@@extension_id__/images/episode-seen.png');
 	background-repeat: no-repeat;
-	background-size: 100% auto;}
+	background-size: 100% auto;
+	}
 	
 .overlay-watched-small{
 	width: 30px;
@@ -86,9 +123,11 @@
 	position:relative;
 	margin-bottom: -30px;
 	background-image: url('chrome-extension://__MSG_@@extension_id__/images/episode-seen-small.png');
-	background-repeat: no-repeat;}
+	background-repeat: no-repeat;
+	}
 	
 #trakt-loading{
 	padding:6px 8px;
 	display:none;
-	float: left;}
+	float: left;
+	}
